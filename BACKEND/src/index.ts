@@ -23,9 +23,9 @@ app.use(rateLimiter);
 app.use("/api/auth", AuthRoute);
 app.use("/api/blog", authMiddleware, BlogRoute);
 
-app.all("*", (req:Request, res:Response, next:NextFunction) => {
-    next({status: 404, message: "Route not found"})
-})
+// app.all("/:path*", (req:Request, res:Response, next:NextFunction) => {
+//     next({status: 404, message: "Route not found"})
+// })
 
 app.use(errorMiddleware);
 
