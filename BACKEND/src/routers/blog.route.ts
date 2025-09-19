@@ -10,9 +10,9 @@ const testing = (req: Request, res:Response, next:NextFunction) => {
     next()
 }
 
-route.post("/",authMiddleware ,createBlog);
-route.put("/",authMiddleware ,updateBlog);
-route.get("/:id",authMiddleware ,getBlog);
-route.get("/", authMiddleware, getAllBlogPostOfMyself);
+route.post("/", createBlog);
+route.put("/", updateBlog);
+route.get("/:id", getBlog);
+route.get("/my-blogs", getAllBlogPostOfMyself);
 
 export default route

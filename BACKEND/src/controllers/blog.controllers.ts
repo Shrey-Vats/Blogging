@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import type z from "zod";
 import { createBlogSchema } from "../schemas/blog.schema";
 import type { ApiResponse } from "../types/ApiResponse";
@@ -8,7 +8,8 @@ import type { blog } from "../types/blog.type";
 
 export const createBlog = async (
   req: Request<{}, {}, z.infer<typeof createBlogSchema>>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { title, content, image } = req.body;
@@ -16,9 +17,9 @@ export const createBlog = async (
     const result = createBlogSchema.safeParse(req.body);
 
     if (!result.success) {
-      return res.status(400).json({
-        message: result.error.issues,
-        success: false,
+      return next({
+        status: 400,
+        message: result.error.issues[0]?.message!,
       });
     }
 
@@ -32,17 +33,11 @@ export const createBlog = async (
     });
 
     if (blog) {
-      return res.status(400).json({
+      return next({
+        status: 400,
         message: "Blog with given title already exit",
-        success: false,
       });
     }
-
-    console.log(   content,
-        image,
-        slug,
-        title,
-        userId,)
 
     const createdBlog = await prisma.blog.create({
       data: {
@@ -60,17 +55,17 @@ export const createBlog = async (
       data: createdBlog,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    return next({
+      status: 500,
       message: "Internal server error",
-      success: false,
-    });
+    })
   }
 };
 
 export const updateBlog = async (
   req: Request<{}, {}, z.infer<typeof createBlogSchema>>,
-  res: Response<ApiResponse>
+  res: Response<ApiResponse>,
+  next: NextFunction
 ) => {
   try {
     const { title, content, image, id } = req.body;
@@ -78,9 +73,9 @@ export const updateBlog = async (
     const result = createBlogSchema.partial().safeParse(req.body);
 
     if (!result.success) {
-      return res.status(400).json({
+      return next({
+        status: 400,
         message: result.error.issues[0]?.message!,
-        success: false,
       });
     }
 
@@ -91,23 +86,23 @@ export const updateBlog = async (
     });
 
     if (!blog) {
-      return res.status(400).json({
-        message: "There is No longer blog with given info",
-        success: false,
+      return next({
+        status: 404,
+        message: "No blog found with this id",
       });
     }
 
     if (userId !== blog.userId) {
-      return res.status(401).json({
-        message: "You are unauthorize",
-        success: false,
+      return next({
+        status: 403,
+        message: "You are not authorized to update this blog",
       });
     }
 
     let data: Partial<blog> = {};
     if (title !== "" && title !== undefined) data.title = title;
-    if (content !== "" || content !== undefined) data.content = content;
-    if (image !== "" || image !== undefined) data.image = image;
+    if (content !== "" && content !== undefined) data.content = content;
+    if (image !== "" &&  image !== undefined) data.image = image;
 
     const updated = await prisma.blog.update({
       where: { id },
@@ -120,15 +115,14 @@ export const updateBlog = async (
       data: updated
     })
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    next({
+      status: 500,
       message: "Internal server error",
-      success: false,
     });
   }
 };
 
-export const getBlog = async (req: Request, res: Response<ApiResponse>) => {
+export const getBlog = async (req: Request, res: Response<ApiResponse>, next: NextFunction) => {
   try {
     const blogId = req.params.id;
 
@@ -144,9 +138,9 @@ export const getBlog = async (req: Request, res: Response<ApiResponse>) => {
     });
 
     if (!user) {
-      return res.status(400).json({
+      return next({
+        status: 404,
         message: "No blog found with this id",
-        success: false,
       });
     }
 
@@ -156,25 +150,25 @@ export const getBlog = async (req: Request, res: Response<ApiResponse>) => {
       data: user
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    return next({
+      status: 500,
       message: "Internal server error",
-      success: false,
     });
   }
 };
 
 export const getAllBlogPostOfMyself = async (
   req: Request,
-  res: Response<ApiResponse>
+  res: Response<ApiResponse>,
+  next: NextFunction
 ) => {
   try {
     const userId = req.userId;
 
     if (!userId) {
-      return res.status(400).json({
-        message: "Invalid userId Id",
-        success: false,
+      return next({
+        status: 401,
+        message: "Unauthorized",
       });
     }
 
@@ -187,10 +181,10 @@ export const getAllBlogPostOfMyself = async (
     console.log(blog)
 
     if (!blog) {
-      return res.status(404).json({
+      return next({
+        status: 404,
         message: "No blog found",
-        success: false,
-      });
+      })
     }
 
     return res.status(200).json({
@@ -200,11 +194,9 @@ export const getAllBlogPostOfMyself = async (
     });
 
   } catch (error) {
-    
-    console.error(error);
-    res.status(500).json({
+    return next({
+      status: 500,
       message: "Internal server error",
-      success: false,
-    });
+    })
   }
 };
