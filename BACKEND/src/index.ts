@@ -7,6 +7,7 @@ import { authMiddleware } from "./middlewares/auth.middleware";
 import { rateLimiter } from "./middlewares/rateLimiter";
 import { errorMiddleware } from "./middlewares/errorMiddleware";
 import { config } from "dotenv";
+import route from "./routers/host.route";
 config(); 
 
 const PORT = process.env.PORT || 5000;
@@ -23,10 +24,7 @@ app.use(cookieParser())
 app.use(rateLimiter);
 app.use("/api/auth", AuthRoute);
 app.use("/api/blog", authMiddleware, BlogRoute);
-
-// app.all("/:path*", (req:Request, res:Response, next:NextFunction) => {
-//     next({status: 404, message: "Route not found"})
-// })
+app.use("/api/upload", authMiddleware, route)
 
 app.use(errorMiddleware);
 

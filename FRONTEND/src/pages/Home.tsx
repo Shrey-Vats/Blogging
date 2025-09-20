@@ -1,7 +1,5 @@
 import API from "@/api/api";
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/hook/AuthProvider";
-import axios from "axios";
 import React, { useEffect } from "react"
 import { useNavigate } from "react-router-dom";
 
@@ -16,7 +14,6 @@ function Home() {
     const [data, setData] = React.useState<BlogType[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const { signOut, user } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -63,28 +60,14 @@ function Home() {
     return (
         <div className="bg-background min-h-screen p-6">
             <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-gray-200">
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground">Blogging Platform</h1>
-                        {user && <p className="text-muted-foreground mt-1">Welcome, {user.name}!</p>}
-                    </div>
-                    <div className="flex gap-4">
-                        <Button onClick={handleCreateBlog} className="bg-primary hover:bg-primary/90">
-                            Create Blog
-                        </Button>
-                        <Button variant="outline" onClick={signOut}>
-                            Sign Out
-                        </Button>
-                    </div>
-                </div>
+              
 
                 {/* Error State */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                         <p className="text-red-600">{error}</p>
                     </div>
-                )}
+                )} 
 
                 {/* Blog List */}
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

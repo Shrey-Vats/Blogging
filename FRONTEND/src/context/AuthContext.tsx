@@ -3,10 +3,8 @@ import {
   useState,
   createContext,
   type ReactNode,
-  useEffect,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import API from "@/api/api";
 
 interface AuthContextType {
@@ -23,16 +21,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  // const tokenValue = localStorage.getItem("token")
-
-  // useEffect(() => {
-  //   if (tokenValue && token !== null) {
-  //     setToken(tokenValue);
-  //   } else {
-  //     console.error("shrey")
-  //   }
-  // }, [tokenValue]);
 
   const signIn = async (data: signInType) => {
     try {

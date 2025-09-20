@@ -6,43 +6,62 @@ import type { ApiResponse } from "../types/ApiResponse";
 import prisma from "../utils/db";
 import type { blog } from "../types/blog.type";
 
+
 export const createBlog = async (
   req: Request<{}, {}, z.infer<typeof createBlogSchema>>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { title, content, image } = req.body;
     const userId = req.userId!;
-    const result = createBlogSchema.safeParse(req.body);
 
+    const result = createBlogSchema.safeParse(req.body);
     if (!result.success) {
       return next({
-    status:400,
-        message: result.error.issues[0]?.message!,
+        status: 400,
+        message: result.error.issues[0]?.message || "Invalid input data",
+        errors: result.error.issues
       });
     }
 
+    const { title, content, image } = result.data;
+
+    // Generate slug
     const slug = title
       .toLowerCase()
-      .replace(/ /g, "-")
-      .replace(/[^\w-]+/g, "");
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, "-")     // Replace spaces with hyphens
+      .replace(/-+/g, "-")      // Replace multiple hyphens with single
+      .trim();
 
-    const blog = await prisma.blog.findUnique({
+    const existingBlog = await prisma.blog.findUnique({
       where: { slug },
     });
 
-    if (blog) {
-      return next({
-    status:400,
-        message: "Blog with given title already exit",
+    if (existingBlog) {
+      const uniqueSlug = `${slug}-${Date.now()}`;
+      
+      const createdBlog = await prisma.blog.create({
+        data: {
+          content,
+          image: image,
+          slug: uniqueSlug,
+          title,
+          userId,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Blog created successfully",
+        data: createdBlog,
       });
     }
 
     const createdBlog = await prisma.blog.create({
       data: {
         content,
-        image,
+        image: image,
         slug,
         title,
         userId,
@@ -50,15 +69,16 @@ export const createBlog = async (
     });
 
     res.status(201).json({
-      message: "Blog created successfuly",
       success: true,
+      message: "Blog created successfully",
       data: createdBlog,
     });
   } catch (error) {
+    console.error("Create blog error:", error);
     return next({
-    status: 500,
+      status: 500,
       message: "Internal server error",
-    })
+    });
   }
 };
 
