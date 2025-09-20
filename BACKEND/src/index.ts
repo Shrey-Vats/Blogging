@@ -1,4 +1,4 @@
-import e, { type NextFunction, type Request, type Response } from "express";
+import e from "express";
 import cookieParser from "cookie-parser"
 import AuthRoute from "./routers/auth.route";
 import BlogRoute from "./routers/blog.route";

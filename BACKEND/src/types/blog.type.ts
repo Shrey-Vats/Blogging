@@ -4,3 +4,10 @@ export interface blog {
     image: string,
     slug?: string
 }
+
+export interface comment {
+    title: string,
+    description: string,
+    rating: number,
+    
+}
