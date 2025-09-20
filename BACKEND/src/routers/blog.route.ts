@@ -4,9 +4,9 @@ import { authMiddleware } from "../middlewares/auth.middleware";
 
 const route = e.Router();
 
+route.get("/my-blogs", getAllBlogPostOfMyself);
 route.post("/", createBlog);
 route.put("/", updateBlog);
 route.get("/:id", getBlog);
-route.get("/my-blogs", getAllBlogPostOfMyself);
 
 export default route

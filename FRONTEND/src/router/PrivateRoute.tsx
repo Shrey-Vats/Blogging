@@ -1,15 +1,15 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "../hook/AuthProvider";
 
 function PrivateRoute() {
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
 
+  // Use Navigate component instead of imperative navigation
   if (!isAuthenticated) {
-    navigate('/sign-in');
+    return <Navigate to="/sign-in" replace />;
   }
 
-  return <Outlet/>;
+  return <Outlet />;
 }
 
 export default PrivateRoute;

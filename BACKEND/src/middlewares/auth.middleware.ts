@@ -8,26 +8,34 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
   const SECRET = process.env.SECRET || "";
   try {
-    const decoded = jwt.verify(token, process.env.SECRET!) as JwtPayload;
-
-    if (!decoded || typeof decoded === "string" || !decoded.id) {
-      return res.status(401).json({ message: "Unauthorized", success: false });
-    }
+    const decoded = jwt.verify(token!, SECRET!) as JwtPayload;
 
     const verify = await prisma.user.findUnique({
       where: { id: decoded.id },
-    })
+    });
 
     if (!verify) {
-      return res.status(401).json({ message: "Unauthorized", success: false });
+      return next({
+        message: "unauthorize",
+        status: 400,
+      });
     }
+
+    console.log(token);
+    console.log(decoded);
+    console.log(verify);
 
     req.userId = decoded.id;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid token", success: false });
+    return next();
   }
 };

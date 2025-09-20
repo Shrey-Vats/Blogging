@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { signUpSchema, signInSchema } from "../schemas/auth.schema";
-import z, { success } from "zod";
+import z from "zod";
 import prisma from "../utils/db";
 import bcrypt from "bcryptjs";
 import type { ApiResponse } from "../types/ApiResponse";
@@ -19,7 +19,7 @@ export const signUp = async (
     const result = signUpSchema.safeParse(req.body);
     if (!result.success) {
       return next({
-        status: 400,
+    status:400,
         message: result.error.issues[0]?.message!,
       });
     }
@@ -32,7 +32,7 @@ export const signUp = async (
 
     if (user) {
       return next({
-        status: 400,
+    status:400,
         message: "User already exists",
       });
     }
@@ -57,14 +57,14 @@ export const signUp = async (
   } catch (error) {
     console.error(error);
     return next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     });
   }
 };
 export const signIn = async (
   req: Request<{}, {}, z.infer<typeof signInSchema>>,
-  res: Response<ApiResponse>,
+  res: Response,
   next: NextFunction
 ) => {
   try {
@@ -75,7 +75,7 @@ export const signIn = async (
     const result = signInSchema.safeParse(req.body);
     if (!result.success) {
       return next({
-        status: 400, message: result.error.issues[0]?.message!,
+    status:400, message: result.error.issues[0]?.message!,
       })
     }
 
@@ -86,17 +86,17 @@ export const signIn = async (
     });
 
     if (!user) {
-      return res.status(400).json({
-        message: "user not found",
-        success: false,
-      });
+      return  next({
+        message: "User not found",
+      status: 400
+      })
     }
 
     const comparePassword = await bcrypt.compare(password, user.password);
 
     if (!comparePassword) {
       return next({
-        status: 400, message: "Invalid credentials",
+    status:400, message: "Invalid credentials",
       })
     }
 
@@ -107,22 +107,23 @@ export const signIn = async (
       SECRET
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    // res.cookie("token", token);
+    // localStorage.setItem("token", token)
 
     res.status(200).json({
-      message: "User login successfuly",
+      message: "User login successfully",
       success: true,
-      data: res.cookie,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      token
     });
   } catch (error) {
     console.error(error);
     return next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     });
   }
@@ -139,7 +140,7 @@ export const logOut = async (req: Request, res: Response, next: NextFunction) =>
   } catch (error) {
     console.error(error);
     return next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     });
   }

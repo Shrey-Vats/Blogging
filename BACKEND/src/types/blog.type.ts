@@ -1,5 +1,6 @@
 export interface blog {
     title: string,
     content: string,
-    image: string
+    image: string,
+    slug?: string
 }

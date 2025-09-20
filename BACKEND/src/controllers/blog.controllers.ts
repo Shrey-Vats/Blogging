@@ -18,7 +18,7 @@ export const createBlog = async (
 
     if (!result.success) {
       return next({
-        status: 400,
+    status:400,
         message: result.error.issues[0]?.message!,
       });
     }
@@ -34,7 +34,7 @@ export const createBlog = async (
 
     if (blog) {
       return next({
-        status: 400,
+    status:400,
         message: "Blog with given title already exit",
       });
     }
@@ -56,7 +56,7 @@ export const createBlog = async (
     });
   } catch (error) {
     return next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     })
   }
@@ -74,10 +74,15 @@ export const updateBlog = async (
 
     if (!result.success) {
       return next({
-        status: 400,
+    status:400,
         message: result.error.issues[0]?.message!,
       });
     }
+
+     const slug = title
+      .toLowerCase()
+      .replace(/ /g, "-")
+      .replace(/[^\w-]+/g, "");
 
     const blog = await prisma.blog.findUnique({
       where: {
@@ -87,20 +92,24 @@ export const updateBlog = async (
 
     if (!blog) {
       return next({
-        status: 404,
+    status:404,
         message: "No blog found with this id",
       });
     }
 
     if (userId !== blog.userId) {
       return next({
-        status: 403,
+    status:403,
         message: "You are not authorized to update this blog",
       });
     }
 
     let data: Partial<blog> = {};
-    if (title !== "" && title !== undefined) data.title = title;
+
+    if (title !== "" && title !== undefined) {
+      data.title = title
+      data.slug = slug
+    };
     if (content !== "" && content !== undefined) data.content = content;
     if (image !== "" &&  image !== undefined) data.image = image;
 
@@ -116,7 +125,7 @@ export const updateBlog = async (
     })
   } catch (error) {
     next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     });
   }
@@ -124,11 +133,11 @@ export const updateBlog = async (
 
 export const getBlog = async (req: Request, res: Response<ApiResponse>, next: NextFunction) => {
   try {
-    const blogId = req.params.id;
+    const slug = req.params.id;
 
     const user = await prisma.blog.findUnique({
       where: {
-        id: blogId,
+        slug
       },
       select: {
         title: true,
@@ -139,7 +148,7 @@ export const getBlog = async (req: Request, res: Response<ApiResponse>, next: Ne
 
     if (!user) {
       return next({
-        status: 404,
+      status: 404,
         message: "No blog found with this id",
       });
     }
@@ -151,7 +160,7 @@ export const getBlog = async (req: Request, res: Response<ApiResponse>, next: Ne
     });
   } catch (error) {
     return next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     });
   }
@@ -165,9 +174,10 @@ export const getAllBlogPostOfMyself = async (
   try {
     const userId = req.userId;
 
+    console.log(userId)
     if (!userId) {
       return next({
-        status: 401,
+    status:401,
         message: "Unauthorized",
       });
     }
@@ -182,7 +192,7 @@ export const getAllBlogPostOfMyself = async (
 
     if (!blog) {
       return next({
-        status: 404,
+    status:404,
         message: "No blog found",
       })
     }
@@ -195,7 +205,7 @@ export const getAllBlogPostOfMyself = async (
 
   } catch (error) {
     return next({
-      status: 500,
+    status: 500,
       message: "Internal server error",
     })
   }
