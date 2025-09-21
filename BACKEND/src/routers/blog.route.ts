@@ -1,12 +1,31 @@
-import { createBlog, getAllBlogPostOfMyself, getBlog, updateBlog } from "../controllers/blog.controllers";
-import e, { type NextFunction, type Request, type Response } from "express";
-import { authMiddleware } from "../middlewares/auth.middleware";
+import { 
+  createBlog, 
+  getAllBlogPostOfMyself, 
+  getBlog, 
+  updateBlog,
+  getAllBlogs,
+  deleteBlog
+} from "../controllers/blog.controllers";
+import { 
+  addReviewToProduct,
+  updateReviewToProduct,
+  deleteReview,
+  getReviewsOfBlog
+} from "../controllers/comment.controller";
+import e from "express";
 
 const route = e.Router();
 
 route.get("/my-blogs", getAllBlogPostOfMyself);
+route.get("/all", getAllBlogs);
+route.get("/:slug", getBlog); 
 route.post("/", createBlog);
-route.put("/", updateBlog);
-route.get("/:id", getBlog);
+route.put("/:id", updateBlog);
+route.delete("/:id", deleteBlog);
 
-export default route
+route.post("/:blogSlug/comments", addReviewToProduct);
+route.put("/:blogSlug/comments", updateReviewToProduct);
+route.get("/:blogSlug/comments", getReviewsOfBlog);
+route.delete("/comments/:reviewId", deleteReview);
+
+export default route;

@@ -13,12 +13,12 @@ export async function addReviewToProduct(
 
     if (!userId) {
       return next({
-        message: "Unauthorize",
-        status: 404,
+        message: "Unauthorized",
+        status: 401,
       });
     }
 
-    const { title, decription, rating, blogSlug } = req.body;
+    const { title, description, rating, blogSlug } = req.body;
 
     const result = addReviewSchema.safeParse(req.body);
 
@@ -29,15 +29,15 @@ export async function addReviewToProduct(
       });
     }
 
-    const isBlogExits = await prisma.blog.findUnique({
+    const isBlogExists = await prisma.blog.findUnique({
       where: {
         slug: blogSlug,
       },
     });
 
-    if (!isBlogExits) {
+    if (!isBlogExists) {
       return next({
-        message: "Blog no longer exits",
+        message: "Blog no longer exists",
         status: 404,
       });
     }
@@ -45,13 +45,13 @@ export async function addReviewToProduct(
     const isAlreadyReviewAdded = await prisma.comment.findFirst({
       where: {
         userId,
-        blogId: isBlogExits.id,
+        blogId: isBlogExists.id,
       },
     });
 
     if (isAlreadyReviewAdded) {
       return next({
-        message: "You already do commit in following blog",
+        message: "You already commented on this blog",
         status: 400,
       });
     }
@@ -59,15 +59,15 @@ export async function addReviewToProduct(
     const review = await prisma.comment.create({
       data: {
         title,
-        decription,
+        decription: description, // Note: matches schema field name
         rating,
-        blogId: isBlogExits.id,
+        blogId: isBlogExists.id,
         userId,
       },
     });
 
     res.status(201).json({
-      message: "User have been created",
+      message: "Comment has been created successfully",
       success: true,
       data: review,
     });
@@ -88,12 +88,12 @@ export async function updateReviewToProduct(
     const userId = req.userId;
     if (!userId) {
       return next({
-        message: "Unauthorize",
-        status: 404,
+        message: "Unauthorized",
+        status: 401,
       });
     }
 
-    const { title, decription, rating, blogSlug } = req.body;
+    const { title, description, rating, blogSlug } = req.body;
 
     const result = addReviewSchema.partial().safeParse(req.body);
 
@@ -104,42 +104,54 @@ export async function updateReviewToProduct(
       });
     }
 
-    const isBlogExits = await prisma.blog.findUnique({
+    const isBlogExists = await prisma.blog.findUnique({
       where: {
         slug: blogSlug,
       },
     });
 
-    if (!isBlogExits) {
+    if (!isBlogExists) {
       return next({
-        message: "Blog no longer exits",
+        message: "Blog no longer exists",
         status: 404,
       });
     }
 
-    const isCommientExit = await prisma.comment.findFirst({
+    const isCommentExists = await prisma.comment.findFirst({
       where: {
         userId,
-        blogId: isBlogExits.id,
+        blogId: isBlogExists.id,
       },
     });
 
-    const where: Partial<comment> = {};
-    if (title && title !== undefined) where.title = title;
-    if (decription && decription !== undefined) where.description = decription;
-    if (rating && rating !== undefined) where.rating = rating;
+    if (!isCommentExists) {
+      return next({
+        message: "Comment not found",
+        status: 404,
+      });
+    }
 
-    const updateComment = await prisma.comment.update({
+    const updateData: Partial<{
+      title: string;
+      decription: string; // Note: matches schema field name
+      rating: number;
+    }> = {};
+    
+    if (title && title !== undefined) updateData.title = title;
+    if (description && description !== undefined) updateData.decription = description;
+    if (rating && rating !== undefined) updateData.rating = rating;
+
+    const updatedComment = await prisma.comment.update({
       where: {
-        id: isCommientExit!.id,
+        id: isCommentExists.id,
       },
-      data: where,
+      data: updateData,
     });
 
     res.status(200).json({
-      message: "Comment updated successfuly",
+      message: "Comment updated successfully",
       success: true,
-      data: updateComment,
+      data: updatedComment,
     });
   } catch (error) {
     next({
@@ -149,7 +161,7 @@ export async function updateReviewToProduct(
   }
 }
 
-export async function delectReview(
+export async function deleteReview(
   req: Request,
   res: Response,
   next: NextFunction
@@ -157,75 +169,93 @@ export async function delectReview(
   try {
     const { reviewId } = req.params;
 
-    const isReviewExit = await prisma.comment.findUnique({
+    const isReviewExists = await prisma.comment.findUnique({
       where: {
         id: reviewId,
       },
     });
 
-    if (!isReviewExit) {
+    if (!isReviewExists) {
       return next({
-        message: "Invalid oprations, Delect not exits",
+        message: "Review not found",
         status: 404,
       });
     }
 
-    const delectReview = await prisma.comment.delete({
+    const deletedReview = await prisma.comment.delete({
       where: {
-        id: isReviewExit.id,
+        id: isReviewExists.id,
       },
     });
 
     res.status(200).json({
-      message: "Review has been delected successfuly",
+      message: "Review has been deleted successfully",
       success: true,
-      data: delectReview
+      data: deletedReview,
     });
   } catch (error) {
     next({
-        message: "Internal server error",
-        status: 500
-    })
+      message: "Internal server error",
+      status: 500,
+    });
   }
 }
 
-export async function getReviewsOfBlog (
+export async function getReviewsOfBlog(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-    try {
-          const {productSlug} = req.params
+  try {
+    const { blogSlug } = req.params;
 
-    if (!productSlug){
-        next({
-            message: "Enter a valid product Slug",
-            status: 400
-        })
+    if (!blogSlug) {
+      return next({
+        message: "Enter a valid blog slug",
+        status: 400,
+      });
     }
 
-    const product = await prisma.blog.findUnique({
-        where: {
-            slug: productSlug
-        }
-    })
+    const blog = await prisma.blog.findUnique({
+      where: {
+        slug: blogSlug,
+      },
+    });
 
-    if(!product){
-        return next({
-            message: "Product no longer exit",
-            status: 400
-        })
+    if (!blog) {
+      return next({
+        message: "Blog no longer exists",
+        status: 404,
+      });
     }
-    const allReviewas = await prisma.comment.findMany({
-        where: {
-            blogId: product.id
-        }
-    })
 
-    } catch (error) {
-        next({
-            message: "Internal Server error",
-            status: 500
-        })
-    }
+    const allReviews = await prisma.comment.findMany({
+      where: {
+        blogId: blog.id,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.status(200).json({
+      message: "Reviews fetched successfully",
+      success: true,
+      data: allReviews,
+    });
+  } catch (error) {
+    next({
+      message: "Internal Server error",
+      status: 500,
+    });
+  }
 }
