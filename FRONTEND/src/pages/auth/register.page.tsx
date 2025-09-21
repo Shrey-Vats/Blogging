@@ -1,11 +1,257 @@
-import { RegisterForm } from "@/components/auth/register-form"
+import React, { useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Divider,
+  IconButton,
+  InputAdornment,
+  Alert,
+  Grid,
+} from '@mui/material';
+import {
+  Visibility,
+  VisibilityOff,
+  Google,
+  Apple,
+  PersonAdd,
+} from '@mui/icons-material';
+import { useAuth, type SignUpData } from '../../context/AuthContext';
 
-export default function RegisterPage() {
+const RegisterPage: React.FC = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const { signUp, isAuthenticated, loading } = useAuth();
+  
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SignUpData>({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+  });
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  const onSubmit = async (data: SignUpData) => {
+    try {
+      await signUp(data);
+    } catch (error: any) {
+      setError('root', {
+        type: 'manual',
+        message: error.response?.data?.message || 'Failed to create account',
+      });
+    }
+  };
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <RegisterForm />
-      </div>
-    </div>
-  )
-}
+    <Container component="main" maxWidth="sm">
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          py: 3,
+        }}
+      >
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            width: '100%',
+            borderRadius: 2,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              mb: 3,
+            }}
+          >
+            <PersonAdd sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+            <Typography component="h1" variant="h4" fontWeight="bold">
+              Create Account
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Join us and start sharing your stories
+            </Typography>
+          </Box>
+
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <Controller
+              name="name"
+              control={control}
+              rules={{
+                required: 'Name is required',
+                minLength: {
+                  value: 2,
+                  message: 'Name must be at least 2 characters',
+                },
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Full Name"
+                  autoComplete="name"
+                  autoFocus
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                />
+              )}
+            />
+
+            <Controller
+              name="email"
+              control={control}
+              rules={{
+                required: 'Email is required',
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: 'Please enter a valid email address',
+                },
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  autoComplete="email"
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                />
+              )}
+            />
+
+            <Controller
+              name="password"
+              control={control}
+              rules={{
+                required: 'Password is required',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters',
+                },
+              }}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  margin="normal"
+                  required
+                  fullWidth
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  autoComplete="new-password"
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={handleClickShowPassword}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              )}
+            />
+
+            {errors.root && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {errors.root.message}
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={isSubmitting || loading}
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+            >
+              {isSubmitting || loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+
+            <Divider sx={{ my: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Or continue with
+              </Typography>
+            </Divider>
+
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Google />}
+                  sx={{ py: 1.5 }}
+                >
+                  Google
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Apple />}
+                  sx={{ py: 1.5 }}
+                >
+                  Apple
+                </Button>
+              </Grid>
+            </Grid>
+
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="body2">
+                Already have an account?{' '}
+                <Link
+                  to="/sign-in"
+                  style={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  Sign in
+                </Link>
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
+    </Container>
+  );
+};
+
+export default RegisterPage;

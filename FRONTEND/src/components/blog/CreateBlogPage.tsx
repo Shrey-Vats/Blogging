@@ -45,16 +45,6 @@ const CreatePostPage = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({ ...prev, image: 'Please select a valid image file' }));
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, image: 'File size must be less than 5MB' }));
-        return;
-      }
-
       setSelectedFile(file);
       setErrors(prev => ({ ...prev, image: '' }));
       
@@ -80,6 +70,7 @@ const CreatePostPage = () => {
 
       const response = await API.post("/api/upload", formData)
 
+      console.log(response)
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to upload image');
       }

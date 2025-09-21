@@ -1,17 +1,31 @@
-import Header from "./Header";
-import Footer from "./Footer";
-import { Outlet } from "react-router-dom";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { Box } from '@mui/material';
+import Header from './Header';
+import Footer from './Footer';
 
-// Layout wrapper with Header + Footer
-export default function Layout() {
+const Layout: React.FC = () => {
   return (
-    <>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+      }}
+    >
       <Header />
-      <main style={{ minHeight: "80vh" }}>
-        <Outlet /> {/* Nested routes will render here */}
-      </main>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          bgcolor: 'background.default',
+        }}
+      >
+        <Outlet />
+      </Box>
       <Footer />
-    </>
+    </Box>
   );
+};
 
-}
+export default Layout;

@@ -1,41 +1,50 @@
-import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+// import MuiThemeProvider from './components/theme/MuiThemeProvider';
+import LoginPage from './pages/auth/login.page';
+import RegisterPage from './pages/auth/register.page';
+import PrivateRoute from './router/PrivateRoute';
+import Layout from './components/layout/layout';
+import HomePage from './pages/Home';
+import BlogPage from './pages/Blog.page';
+import CreateBlogPage from './pages/blog/createBlog';
+import { AuthProvider } from './context/AuthContext';
+import MuiThemeProvider from './MuiThemeProvider';
+// import { AuthProvider } from './context/AuthContext';
+// import PrivateRoute from './components/auth/PrivateRoute';
+// import Layout from './components/layout/Layout';
+// import LoginPage from './pages/auth/LoginPage';
+// import RegisterPage from './pages/auth/RegisterPage';
+// import HomePage from './pages/HomePage';
+// import BlogPage from './pages/BlogPage';
+// import CreateBlogPage from './pages/CreateBlogPage';
 
-import LoginPage from "./pages/auth/login.page";
-import RegisterPage from "./pages/auth/register.page";
-import Home from "./pages/Home";
-import Blog from "./pages/Blog.page";
-import CreatePostPage from "./components/blog/CreateBlogPage";
-
-import { AuthProvider } from "./context/AuthContext";
-import Layout from "./components/layout/layout";
-
-// Layout Components
-
-
-
-function App() {
+const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes without layout */}
-          <Route path="/sign-in" element={<LoginPage />} />
-          <Route path="/sign-up" element={<RegisterPage />} />
+    <MuiThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/sign-in" element={<LoginPage />} />
+            <Route path="/sign-up" element={<RegisterPage />} />
 
-          {/* Routes with global layout */}
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/blog/:slug" element={<Blog />} />
-            <Route path="/create" element={<CreatePostPage />} />
-          </Route>
+            {/* Protected routes with layout */}
+            <Route element={<PrivateRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/blog/:slug" element={<BlogPage />} />
+                <Route path="/create" element={<CreateBlogPage />} />
+              </Route>
+            </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<LoginPage />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+            {/* Fallback route */}
+            <Route path="*" element={<Navigate to="/sign-in" replace />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </MuiThemeProvider>
   );
-}
+};
 
 export default App;

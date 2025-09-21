@@ -1,119 +1,282 @@
-import API from "@/api/api";
-import { Button } from "@/components/ui/button"
-import React, { useEffect } from "react"
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  CardActions,
+  Typography,
+  Button,
+  Box,
+  CircularProgress,
+  Alert,
+  Fab,
+  Chip,
+} from '@mui/material';
+import {
+  Add,
+  Create,
+  CalendarToday,
+  Visibility,
+} from '@mui/icons-material';
+import API from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
-interface BlogType {
-    title: string;
-    slug: string;
-    content?: string;
-    createdAt?: string;
+interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  image: string;
+  content?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-function Home() {
-    const [data, setData] = React.useState<BlogType[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
-    const navigate = useNavigate();
+const HomePage: React.FC = () => {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        async function fetchBlogs() {
-            try {
-                setLoading(true);
-                const response = await API.get(`/api/blog/my-blogs`);
-            
-                console.log(response)
-                if(response.data.success){
-                    setData(response.data.data);
-                } else {
-                    setError("Failed to fetch blogs");
-                }
-            } catch (error: any) {
-                console.error('Fetch blogs error:', error);
-                setError(error.response?.data?.message || "Failed to fetch blogs");
-            } finally {
-                setLoading(false);
-            }
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await API.get('/api/blog/my-blogs');
+
+        if (response.data.success) {
+          setBlogs(response.data.data);
+        } else {
+          setError('Failed to fetch blogs');
         }
-        fetchBlogs();
-    }, []);
-
-    const handleCreateBlog = () => {
-        navigate('/create');
+      } catch (err: any) {
+        console.error('Fetch blogs error:', err);
+        setError(err.response?.data?.message || 'Failed to fetch blogs');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleBlogClick = (slug: string) => {
-        navigate(`/blog/${slug}`);
-    };
+    fetchBlogs();
+  }, []);
 
-    if (loading) {
-        return (
-            <div className="bg-background flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p>Loading blogs...</p>
-                </div>
-            </div>
-        );
-    }
+  const handleCreateBlog = () => {
+    navigate('/create');
+  };
 
+  const handleBlogClick = (slug: string) => {
+    navigate(`/blog/${slug}`);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const truncateContent = (content: string, maxLength: number = 100) => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '...';
+  };
+
+  if (loading) {
     return (
-        <div className="bg-background min-h-screen p-6">
-            <div className="max-w-6xl mx-auto">
-              
-
-                {/* Error State */}
-                {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                        <p className="text-red-600">{error}</p>
-                    </div>
-                )} 
-
-                {/* Blog List */}
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {data.length > 0 ? (
-                        data.map((blog: BlogType) => (
-                            <div
-                                key={blog.slug}
-                                onClick={() => handleBlogClick(blog.slug)}
-                                className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition-all duration-300 border border-gray-100 cursor-pointer hover:border-primary/20"
-                            >
-                                <h2 className="text-xl font-semibold text-gray-800 mb-2 line-clamp-2">
-                                    {blog.title}
-                                </h2>
-                                {blog.content && (
-                                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                                        {blog.content.substring(0, 100)}...
-                                    </p>
-                                )}
-                                <div className="flex justify-between items-center">
-                                    <span className="inline-block px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
-                                        Read More
-                                    </span>
-                                    {blog.createdAt && (
-                                        <span className="text-xs text-gray-400">
-                                            {new Date(blog.createdAt).toLocaleDateString()}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="col-span-full text-center py-12">
-                            <div className="text-gray-400 mb-4">
-                                <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-600 mb-2">No blogs yet</h3>
-                            <p className="text-gray-500 mb-4">Be the first to create a blog post!</p>
-                            <Button onClick={handleCreateBlog}>Create Your First Blog</Button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress size={60} />
+        </Box>
+      </Container>
     );
-}
+  }
 
-export default Home;
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Welcome Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
+          Welcome to BlogTech
+        </Typography>
+        {user && (
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            Hello, {user.name}! Ready to share your thoughts?
+          </Typography>
+        )}
+      </Box>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Create Blog Section */}
+      {blogs.length === 0 && !error && (
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: 8,
+            px: 4,
+            backgroundColor: 'background.paper',
+            borderRadius: 2,
+            mb: 4,
+          }}
+        >
+          <Create sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
+          <Typography variant="h4" gutterBottom>
+            Start Your Blogging Journey
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            You haven't created any blogs yet. Share your thoughts and ideas with the world!
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<Add />}
+            onClick={handleCreateBlog}
+            sx={{ px: 4, py: 1.5 }}
+          >
+            Create Your First Blog
+          </Button>
+        </Box>
+      )}
+
+      {/* Blogs Grid */}
+      {blogs.length > 0 && (
+        <>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h4" component="h2" fontWeight="bold">
+              Your Blogs ({blogs.length})
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={handleCreateBlog}
+              sx={{ display: { xs: 'none', sm: 'flex' } }}
+            >
+              Create New Blog
+            </Button>
+          </Box>
+
+          <Grid container spacing={3}>
+            {blogs.map((blog) => (
+              <Grid item xs={12} sm={6} md={4} key={blog.id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6,
+                    },
+                  }}
+                  onClick={() => handleBlogClick(blog.slug)}
+                >
+                  {blog.image && (
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={blog.image}
+                      alt={blog.title}
+                      sx={{
+                        objectFit: 'cover',
+                      }}
+                    />
+                  )}
+                  <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                    <Typography
+                      gutterBottom
+                      variant="h6"
+                      component="h3"
+                      fontWeight="bold"
+                      sx={{
+                        mb: 2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {blog.title}
+                    </Typography>
+                    
+                    {blog.content && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        {truncateContent(blog.content)}
+                      </Typography>
+                    )}
+
+                    {blog.createdAt && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 'auto' }}>
+                        <CalendarToday sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(blog.createdAt)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </CardContent>
+                  
+                  <CardActions sx={{ p: 2, pt: 0 }}>
+                    <Button
+                      size="small"
+                      startIcon={<Visibility />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBlogClick(blog.slug);
+                      }}
+                    >
+                      Read More
+                    </Button>
+                    <Chip
+                      label="Published"
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ ml: 'auto' }}
+                    />
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      )}
+
+      {/* Floating Action Button for Mobile */}
+      <Fab
+        color="primary"
+        aria-label="add"
+        onClick={handleCreateBlog}
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: { xs: 'flex', sm: 'none' },
+        }}
+      >
+        <Add />
+      </Fab>
+    </Container>
+  );
+};
+
+export default HomePage;

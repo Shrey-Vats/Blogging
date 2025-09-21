@@ -1,15 +1,25 @@
-import { Outlet, Navigate } from "react-router-dom";
-import { useAuth } from "../hook/AuthProvider";
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Box, CircularProgress } from '@mui/material';
 
-function PrivateRoute() {
-  const { isAuthenticated } = useAuth();
+const PrivateRoute: React.FC = () => {
+  const { isAuthenticated, loading } = useAuth();
 
-  // Use Navigate component instead of imperative navigation
-  if (!isAuthenticated) {
-    return <Navigate to="/sign-in" replace />;
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
+        <CircularProgress size={60} />
+      </Box>
+    );
   }
 
-  return <Outlet />;
-}
+  return isAuthenticated ? <Outlet /> : <Navigate to="/sign-in" replace />;
+};
 
 export default PrivateRoute;

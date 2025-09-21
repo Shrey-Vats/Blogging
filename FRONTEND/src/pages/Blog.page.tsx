@@ -1,24 +1,50 @@
-import API from '@/api/api'
-import React, { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  Typography,
+  Box,
+  Button,
+  CircularProgress,
+  Alert,
+  Chip,
+  Divider,
+  Avatar,
+} from '@mui/material';
+import {
+  ArrowBack,
+  CalendarToday,
+  Person,
+  AccessTime,
+} from '@mui/icons-material';
+import API from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
-interface content {
+interface BlogData {
+  id: string;
   title: string;
   content: string;
   image: string;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
-function Blog() {
-  const [html, setHtml] = useState<content | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+const BlogPage: React.FC = () => {
+  const [blog, setBlog] = useState<BlogData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { slug } = useParams<{ slug: string }>();
+  const { showNotification } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const callBlog = async () => {
+    const fetchBlog = async () => {
       if (!slug) {
         setError('Blog not found');
         setLoading(false);
@@ -33,146 +59,292 @@ function Blog() {
         if (!response.data.success) {
           setError(response.data.message || 'Failed to load blog');
         } else {
-          setHtml(response.data.data);
+          setBlog(response.data.data);
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Something went wrong');
+        console.error('Fetch blog error:', err);
+        const errorMessage = err.response?.data?.message || 'Something went wrong';
+        setError(errorMessage);
+        showNotification(errorMessage, 'error');
       } finally {
         setLoading(false);
       }
     };
 
-    callBlog();
-  }, [slug]);
+    fetchBlog();
+  }, [slug, showNotification]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const getReadingTime = (content: string) => {
+    const wordsPerMinute = 200;
+    const wordCount = content.split(/\s+/).length;
+    const readingTime = Math.ceil(wordCount / wordsPerMinute);
+    return `${readingTime} min read`;
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   if (loading) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading blog...</p>
-        </div>
-      </div>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress size={60} />
+        </Box>
+      </Container>
     );
   }
 
-  if (error) {
+  if (error || !blog) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="text-red-500 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <div className="space-y-2">
-              <Button onClick={() => window.location.reload()} className="w-full">
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/')} className="w-full">
-                Back to Home
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!html) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Blog Not Found</h2>
-            <p className="text-gray-600 mb-6">The blog post you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/')} className="w-full">
-              Back to Home
-            </Button>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="sm" sx={{ py: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error || 'Blog not found'}
+          </Alert>
+          <Button
+            variant="contained"
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/')}
+          >
+            Back to Home
+          </Button>
+        </Paper>
+      </Container>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header with back button */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      {/* Back Button */}
+      <Button
+        startIcon={<ArrowBack />}
+        onClick={() => navigate('/')}
+        sx={{ mb: 3 }}
+      >
+        Back to Home
+      </Button>
+
+      {/* Blog Article */}
+      <Paper elevation={3} sx={{ overflow: 'hidden' }}>
+        {/* Featured Image */}
+        {blog.image && (
+          <Box
+            component="img"
+            src={blog.image}
+            alt={blog.title}
+            sx={{
+              width: '100%',
+              height: { xs: 250, md: 400 },
+              objectFit: 'cover',
+            }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        )}
+
+        {/* Article Content */}
+        <Box sx={{ p: { xs: 3, md: 5 } }}>
+          {/* Blog Title */}
+          <Typography
+            variant="h3"
+            component="h1"
+            fontWeight="bold"
+            gutterBottom
+            sx={{
+              fontSize: { xs: '2rem', md: '3rem' },
+              lineHeight: 1.2,
+              mb: 3,
+            }}
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </div>
+            {blog.title}
+          </Typography>
 
-      {/* Blog content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <article className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Blog image */}
-          {html.image && (
-            <div className="w-full h-64 md:h-80 lg:h-96 overflow-hidden">
-              <img 
-                src={html.image} 
-                alt={html.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-          )}
+          {/* Author and Meta Information */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 40, height: 40 }}>
+                {getInitials(blog.user.name)}
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  {blog.user.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {blog.user.email}
+                </Typography>
+              </Box>
+            </Box>
 
-          {/* Blog header */}
-          <div className="p-6 md:p-8 lg:p-12">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              {html.title}
-            </h1>
+            <Divider orientation="vertical" flexItem />
 
-            {/* Blog content with proper styling */}
-            <div 
-              className="prose prose-lg max-w-none
-                prose-headings:text-gray-900 prose-headings:font-semibold
-                prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4
-                prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-                prose-strong:text-gray-900 prose-strong:font-semibold
-                prose-ul:text-gray-700 prose-ol:text-gray-700
-                prose-li:mb-1 prose-li:leading-relaxed
-                prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:p-4 prose-blockquote:rounded-r-lg
-                prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm
-                prose-pre:bg-gray-900 prose-pre:text-gray-100
-                prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto
-                prose-hr:border-gray-300
-                prose-table:text-sm
-                prose-th:bg-gray-50 prose-th:font-semibold prose-th:text-gray-900
-                prose-td:border-gray-200"
-              dangerouslySetInnerHTML={{ __html: html.content }}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CalendarToday sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="body2" color="text.secondary">
+                {formatDate(blog.createdAt)}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="body2" color="text.secondary">
+                {getReadingTime(blog.content)}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Divider sx={{ mb: 4 }} />
+
+          {/* Blog Content */}
+          <Box
+            sx={{
+              '& > *': { mb: 2 },
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                fontWeight: 'bold',
+                mt: 3,
+                mb: 2,
+                color: 'text.primary',
+              },
+              '& h1': { fontSize: '2.5rem' },
+              '& h2': { fontSize: '2rem' },
+              '& h3': { fontSize: '1.75rem' },
+              '& h4': { fontSize: '1.5rem' },
+              '& h5': { fontSize: '1.25rem' },
+              '& h6': { fontSize: '1rem' },
+              '& p': {
+                lineHeight: 1.7,
+                fontSize: '1.1rem',
+                color: 'text.primary',
+                mb: 2,
+              },
+              '& ul, & ol': {
+                pl: 3,
+                '& li': {
+                  mb: 1,
+                  lineHeight: 1.6,
+                },
+              },
+              '& blockquote': {
+                borderLeft: 4,
+                borderLeftColor: 'primary.main',
+                bgcolor: 'grey.50',
+                p: 2,
+                my: 3,
+                borderRadius: 1,
+                fontStyle: 'italic',
+              },
+              '& code': {
+                bgcolor: 'grey.100',
+                color: 'primary.dark',
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                fontFamily: 'monospace',
+              },
+              '& pre': {
+                bgcolor: 'grey.900',
+                color: 'common.white',
+                p: 2,
+                borderRadius: 1,
+                overflow: 'auto',
+                '& code': {
+                  bgcolor: 'transparent',
+                  color: 'inherit',
+                },
+              },
+              '& img': {
+                maxWidth: '100%',
+                height: 'auto',
+                borderRadius: 1,
+                boxShadow: 2,
+                my: 2,
+              },
+              '& a': {
+                color: 'primary.main',
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline',
+                },
+              },
+            }}
+          >
+            <div
+              dangerouslySetInnerHTML={{
+                __html: blog.content.replace(/\n/g, '<br />'),
+              }}
             />
-          </div>
-        </article>
+          </Box>
 
-        {/* Back to top button */}
-        <div className="mt-8 text-center">
-          <Button 
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            variant="outline"
-            className="mb-8"
+          <Divider sx={{ my: 4 }} />
+
+          {/* Article Footer */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
           >
-            Back to Top
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Published on {formatDate(blog.createdAt)}
+                {blog.updatedAt !== blog.createdAt && (
+                  <>
+                    {' • '}
+                    Updated on {formatDate(blog.updatedAt)}
+                  </>
+                )}
+              </Typography>
+            </Box>
+            <Chip
+              label="Published"
+              color="primary"
+              size="small"
+            />
+          </Box>
+        </Box>
+      </Paper>
 
-export default Blog;
+      {/* Back to Top Button */}
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Button
+          variant="outlined"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
+          Back to Top
+        </Button>
+      </Box>
+    </Container>
+  );
+};
+
+export default BlogPage;
